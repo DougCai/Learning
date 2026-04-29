@@ -24,6 +24,21 @@ msModelSlim 中量化能力大致分为三层：
 | Quantizer | 负责具体量化参数统计、权重量化、激活伪量化 | `msmodelslim/core/quantizer` |
 | IR / FakeQuant | 负责伪量化模块、部署态模块、保存格式 | `msmodelslim/ir`、`msmodelslim/core/quant_service` |
 
+### 1.1 Processor 与 core/quantizer 中算法的区别
+
+两者的核心区别不是算法能力高低，而是所在抽象层不同：
+
+- `processor` 更像量化流程/方案编排器，负责把一个模型量化起来。它处理层选择、模块替换、hook 注入、校准数据收集、训练或优化流程、阶段切换、部署态转换等问题。典型问题是“哪些层要量化”“什么时候收集统计信息”“怎么替换模型模块”“怎么把多个底层量化方法组合成一个完整方案”。
+- `core/quantizer` 更像底层量化算子/数学策略，负责给定权重或激活张量后如何计算量化参数并执行伪量化。它处理 scale / offset 统计、per-tensor / per-token / per-channel / per-group 粒度、对称或非对称量化、权重量化误差优化等问题。典型问题是“scale 怎么算”、“使用 minmax、histogram、ssz 还是 gptq”、“量化误差如何补偿”。
+
+因此，`processor` 通常负责“流程和模型改写”，`core/quantizer` 通常负责“具体量化数学”。例如 `linear_quant` 位于 `processor/quant/linear.py`，它不是单一数学算法，而是线性层量化的统一入口；它会扫描 `nn.Linear`，根据配置创建 `LinearQuantizer`，再由底层 quantizer 选择 `minmax`、`histogram`、`ssz`、`gptq` 等具体量化策略。
+
+判断一个新算法应该放在哪里，可以按下面原则：
+
+- 如果它需要改模型结构、挂 hook、跑校准/训练流程、适配 Attention 或 KV Cache 等特殊执行路径，通常应放在 `processor`。
+- 如果它只定义某类权重或激活如何统计量化参数、如何 fake quant、如何优化量化误差，通常应放在 `core/quantizer`。
+- 如果它是多个流程和底层量化器组合出的完整 recipe，例如 LAOS，更适合在 processor / YAML / pipeline 层表达，而不是塞进单个 quantizer。
+
 从使用视角看：
 
 - `linear_quant` 是最通用的线性层量化处理器。
