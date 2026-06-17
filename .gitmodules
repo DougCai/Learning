@@ -1,0 +1,12 @@
+[submodule "Inference/VLLM/learn-nano-vllm"]
+	path = Inference/VLLM/learn-nano-vllm
+	url = https://github.com/bcefghj/learn-nano-vllm.git
+[submodule "Inference/VLLM/nano-vllm-ascend"]
+	path = Inference/VLLM/nano-vllm-ascend
+	url = https://github.com/linzm1007/nano-vllm-ascend.git
+[submodule "Inference/VLLM/nano-vllm"]
+	path = Inference/VLLM/nano-vllm
+	url = https://github.com/GeeeekExplorer/nano-vllm.git
+[submodule "Inference/VLLM/nano-vllm-cpu"]
+	url = https://github.com/linzm1007/nano-vllm-cpu.git
+	path = Inference/VLLM/nano-vllm-cpu
