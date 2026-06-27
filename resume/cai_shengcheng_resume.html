@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>蔡圣诚 - 简历</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      color: #333;
+      background: #fff;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    .page {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 36px 44px;
+    }
+    h1 {
+      font-size: 26px;
+      color: #003366;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .meta, .contact {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .summary {
+      margin: 14px 0 18px;
+      padding: 10px 14px;
+      background: #f7f9fc;
+      border-left: 3px solid #003366;
+      color: #444;
+      font-size: 13.5px;
+    }
+    h2 {
+      font-size: 15px;
+      color: #003366;
+      border-bottom: 1.5px solid #003366;
+      padding-bottom: 4px;
+      margin: 18px 0 10px;
+    }
+    h3 {
+      font-size: 14px;
+      color: #333;
+      margin: 12px 0 6px;
+    }
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 4px 16px;
+      margin-bottom: 4px;
+    }
+    .company { font-weight: 600; font-size: 14.5px; }
+    .date { color: #666; font-size: 13px; white-space: nowrap; }
+    .role { color: #555; font-size: 13px; margin-bottom: 6px; }
+    ul { padding-left: 18px; margin-bottom: 6px; }
+    li { margin-bottom: 5px; color: #333; }
+    li strong { color: #003366; font-weight: 600; }
+    .skills-grid {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 4px 10px;
+      font-size: 13px;
+    }
+    .skills-grid .label { color: #003366; font-weight: 600; }
+    .edu-item { margin-bottom: 4px; font-size: 13.5px; }
+    .honor { font-size: 13.5px; color: #444; }
+    .minor { font-size: 13px; color: #555; margin-top: 8px; }
+    @media print {
+      body { font-size: 12.5px; }
+      .page { padding: 24px 32px; max-width: none; }
+      .summary { background: #f7f9fc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>蔡圣诚</h1>
+    <div class="meta">求职方向：大模型推理工程师（量化推理 / 推理性能优化）</div>
+    <div class="contact">杭州（可接受上海） | 15958033960 | cscznb5612@gmail.com</div>
+
+    <div class="summary">
+      4 年华为昇腾大模型推理研发经验，现任下一代模型量化工具负责人。主导 MXFP8/MXFP4 与 W4A4 低精度量化算法及推理落地，支撑 DeepSeek v4、Qwen3.5 等 20+ 权重在昇腾 A5 上线与客户送测；精度误差控制在 1% 以内，推理性能达竞品 1.x 倍，单模型适配周期压缩至 1 天。协同 4 部门 20+ 人完成推理引擎、量化算法与工具链端到端交付。
+    </div>
+
+    <h2>专业技能</h2>
+    <div class="skills-grid">
+      <span class="label">编程基础</span>
+      <span>Python、C/C++（11 标准及以上），熟悉常用数据结构与面向对象设计</span>
+      <span class="label">深度学习</span>
+      <span>PyTorch 大模型推理 Pipeline 构建，核心模块 PTQ 量化与性能调优</span>
+      <span class="label">量化算法</span>
+      <span>MXFP8/MXFP4、SVDQuant、二级量化、MSE Round、W4A4 PTQ；熟悉 AWQ/GPTQ/SmoothQuant 等 PTQ 范式</span>
+      <span class="label">推理优化</span>
+      <span>量化算子实现、Model-free 权重转换、推理引擎协同优化、0-day 模型适配</span>
+      <span class="label">通信与算子</span>
+      <span>多卡通信算子调试（Allreduce 等）、Ascend C 算子开发与上板调试</span>
+    </div>
+
+    <h2>工作经历</h2>
+    <div class="job-header">
+      <span class="company">华为技术有限公司</span>
+      <span class="date">2022.02 — 至今</span>
+    </div>
+    <div class="role">高级工程师 · 昇腾大模型推理 / 量化</div>
+
+    <h3>大模型量化推理（项目负责人）</h3>
+    <ul>
+      <li><strong>MXFP 量化落地：</strong>主导 MXFP8、MXFP4 算法设计与实现，支撑 Qwen、DeepSeek、GLM、LongCat、Kimi、Minimax 等 20+ 权重在昇腾 A5 NPU 上线及客户送测；对 DeepSeek v4、Qwen3.5 实现 0-day 量化适配。精度相对浮点误差 &lt;1%，推理性能达竞品 1.x 倍，单模型适配 + 精度调优周期约 1 天。</li>
+      <li><strong>W4A4 低精度量化：</strong>主导 SVDQuant、二级量化、MSE Round、C7 等 4bit 方案，在 Wan2.2 上完成 W4A4 量化；VBench 精度指标误差均 &lt;0.01，推理性能达竞品 1.x 倍，相对浮点精度损失 &lt;1%。</li>
+      <li><strong>动态 PTQ 转换：</strong>实现 Model-free 权重转换能力，在 PTQ 动态场景下以轻量化流程完成权重量化，降低大模型迁移与推理部署成本。</li>
+      <li><strong>端到端项目交付：</strong>作为负责人协同推理引擎、量化算法、量化工具 4 个部门 20+ 人推进交付，保障客户面送测通过；相较上一代引入浮点量化体系并扩展 4bit 低精度算法矩阵，参与关键方案设计与路线决策。</li>
+    </ul>
+
+    <h3>昇腾算子调试工具</h3>
+    <ul>
+      <li><strong>上板调试与生态：</strong>基于 LLDB 实现 NPU 断点、单步、变量打印及 coredump / 多 Kernel / 多卡调试，端到端打通真机调试流程；社区覆盖 1000+ 开发人员、20+ 活跃算子团队，算子精度与挂死类问题定位由数天缩短至小时级，开发效率提升数倍。</li>
+    </ul>
+
+    <p class="minor">早期参与农机自动驾驶路径规划算法研发（专利 1 项）。</p>
+
+    <h2>教育背景</h2>
+    <div class="edu-item">华东师范大学 · 计算机技术 · 硕士 · 2019 — 2022</div>
+    <div class="edu-item">浙江工业大学 · 计算机科学与技术 · 本科 · 2015 — 2019</div>
+
+    <h2>专利</h2>
+    <div class="honor">发明专利 1 项（耕地路径规划）</div>
+  </div>
+</body>
+</html>

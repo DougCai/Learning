@@ -10,3 +10,21 @@
 [submodule "Inference/VLLM/nano-vllm-cpu"]
 	url = https://github.com/linzm1007/nano-vllm-cpu.git
 	path = Inference/VLLM/nano-vllm-cpu
+[submodule "skills/review/TechSpar"]
+	path = skills/review/TechSpar
+	url = https://github.com/AnnaSuSu/TechSpar.git
+[submodule "skills/review/resume-skills"]
+	path = skills/review/resume-skills
+	url = https://github.com/wangyafu/resume-skills.git
+[submodule "skills/review/job-hunt-copilot"]
+	path = skills/review/job-hunt-copilot
+	url = https://github.com/spontaneousai/job-hunt-copilot.git
+[submodule "skills/review/resume-builder-skill"]
+	path = skills/review/resume-builder-skill
+	url = https://github.com/Jichengyuuuuu/resume-builder-skill.git
+[submodule "skills/review/resume-optimizer"]
+	path = skills/review/resume-optimizer
+	url = https://github.com/wyh0626/resume-optimizer.git
+[submodule "skills/review/resume-tailoring-skill"]
+	path = skills/review/resume-tailoring-skill
+	url = https://github.com/varunr89/resume-tailoring-skill.git
