@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Generate resume DOCX from structured content."""
+"""Generate resume DOCX from structured content (must stay in sync with cai_shengcheng_resume.html)."""
 
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.oxml.ns import qn
 
-OUT = "/home/caishengcheng/resume/cai_shengcheng_resume.docx"
+OUT = r"c:\workspace\Learning\resume\cai_shengcheng_resume.docx"
 
 def set_run_font(run, size=10.5, bold=False, color=None):
     run.font.name = "Microsoft YaHei"
@@ -60,21 +60,21 @@ def main():
 
     p = doc.add_paragraph()
     r = p.add_run(
-        "4 年华为昇腾大模型推理研发经验，现任下一代模型量化工具负责人。主导 MXFP8/MXFP4 与 W4A4 "
-        "低精度量化算法及推理落地，支撑 DeepSeek v4、Qwen3.5 等 20+ 权重在昇腾 A5 上线与客户送测；"
-        "精度误差控制在 1% 以内，推理性能达竞品 1.x 倍，单模型适配周期压缩至 1 天。"
-        "协同 4 部门 20+ 人完成推理引擎、量化算法与工具链端到端交付。"
+        "3 年华为昇腾大模型相关业务研发经验，现就职于昇腾计算开发部推理使能组，组内主要业务为大模型量化、投机推理、测评。"
+        "本人现任Atlas 950代际大模型量化负责人，主导 MXFP8/MXFP4 与 W4A4 低精度量化算法开发及主流开源模型量化推理落地，"
+        "支撑 20+ 模型权重在昇腾 950 代际上线与客户送测；精度误差控制在 1% 以内，推理性能达竞品 1.x 倍，"
+        "单模型适配周期压缩至 1 天。协同 4 部门 20+ 人完成推理引擎、量化算法与工具链端到端交付。"
     )
     set_run_font(r, 10)
     p.paragraph_format.space_after = Pt(8)
 
     add_heading(doc, "专业技能", 2)
     skills = [
-        ("编程基础", "Python、C/C++（11 标准及以上），熟悉常用数据结构与面向对象设计"),
-        ("深度学习", "PyTorch 大模型推理 Pipeline 构建，核心模块 PTQ 量化与性能调优"),
-        ("量化算法", "MXFP8/MXFP4、SVDQuant、二级量化、MSE Round、W4A4 PTQ；熟悉 AWQ/GPTQ/SmoothQuant 等 PTQ 范式"),
+        ("编程基础", "Python、C++，熟悉常用数据结构与面向对象设计"),
+        ("深度学习", "PyTorch 大模型推理，核心模块 PTQ 量化与性能、精度调优"),
+        ("量化算法", "MXFP8/MXFP4、SVDQuant、二级量化、MSE Round、W4A4低精量化、Attention量化；熟悉 AWQ/GPTQ/SmoothQuant/autoround 等业界主流PTQ量化算法"),
         ("推理优化", "量化算子实现、Model-free 权重转换、推理引擎协同优化、0-day 模型适配"),
-        ("通信与算子", "多卡通信算子调试（Allreduce 等）、Ascend C 算子开发与上板调试"),
+        ("算子开发", "Ascend C 算子开发与上板调试（NPU Debugger）"),
     ]
     for label, val in skills:
         p = doc.add_paragraph()
@@ -96,10 +96,11 @@ def main():
 
     for title, bullets in [
         ("大模型量化推理（项目负责人）", [
-            ("MXFP 量化落地：", "主导 MXFP8、MXFP4 算法设计与实现，支撑 Qwen、DeepSeek、GLM、LongCat、Kimi、Minimax 等 20+ 权重在昇腾 A5 NPU 上线及客户送测；对 DeepSeek v4、Qwen3.5 实现 0-day 量化适配。精度相对浮点误差 <1%，推理性能达竞品 1.x 倍，单模型适配 + 精度调优周期约 1 天。"),
-            ("W4A4 低精度量化：", "主导 SVDQuant、二级量化、MSE Round、C7 等 4bit 方案，在 Wan2.2 上完成 W4A4 量化；VBench 精度指标误差均 <0.01，推理性能达竞品 1.x 倍，相对浮点精度损失 <1%。"),
+            ("MXFP 量化落地：", "主导 MXFP8、MXFP4 算法设计与实现，支撑 Qwen、DeepSeek、GLM、LongCat、Kimi、Minimax 等 20+ 权重在昇腾 A5 NPU 上线及客户送测；对 DeepSeek v4、Qwen3.5 实现 0-day 量化适配。精度相对浮点误差 <1%，推理性能达竞品 1.x 倍，单模型适配约 1 天，整体调优周级完成。"),
+            ("W4A4 低精度量化：", "主导 SVDQuant、二级量化、MSE Round、C7 等 4bit 方案，在开源多模态大模型 （Wan2.2、Qwen-Image-Edit等） 上完成 W4A4 量化；VBench or Gedit 精度指标误差均 <0.01，推理性能达竞品 1.x 倍。"),
             ("动态 PTQ 转换：", "实现 Model-free 权重转换能力，在 PTQ 动态场景下以轻量化流程完成权重量化，降低大模型迁移与推理部署成本。"),
             ("端到端项目交付：", "作为负责人协同推理引擎、量化算法、量化工具 4 个部门 20+ 人推进交付，保障客户面送测通过；相较上一代引入浮点量化体系并扩展 4bit 低精度算法矩阵，参与关键方案设计与路线决策。"),
+            ("投机推理：", "主要负责DeepSeek v4 flash/pro DSpark 权重的0 day 4bit量化适配。并且基于 DeepSeek 开源 DeepSpec，参与完成 910B npu芯片上的 DSpark 训练→GSM8K eval 全链路验证。"),
         ]),
         ("昇腾算子调试工具", [
             ("上板调试与生态：", "基于 LLDB 实现 NPU 断点、单步、变量打印及 coredump / 多 Kernel / 多卡调试，端到端打通真机调试流程；社区覆盖 1000+ 开发人员、20+ 活跃算子团队，算子精度与挂死类问题定位由数天缩短至小时级，开发效率提升数倍。"),
@@ -125,11 +126,6 @@ def main():
         p = doc.add_paragraph()
         r = p.add_run(line)
         set_run_font(r, 10.5)
-
-    add_heading(doc, "专利", 2)
-    p = doc.add_paragraph()
-    r = p.add_run("发明专利 1 项（耕地路径规划）")
-    set_run_font(r, 10.5)
 
     doc.save(OUT)
     print(f"Saved: {OUT}")
