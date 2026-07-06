@@ -1,0 +1,14 @@
+# 默认文本文件统一 LF，便于 Linux / Windows 跨平台阅读
+* text=auto eol=lf
+
+# Markdown 明确指定 LF
+*.md text eol=lf
+
+# 二进制文件不做换行转换
+*.docx binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.drawio binary
