@@ -113,7 +113,7 @@
     </div>
 
     <div class="summary">
-      3 年+华为昇腾相关业务研发经验，就职于昇腾计算开发部<strong>推理使能</strong>组（大模型量化、投机推理、测评），本人现任Atlas 950代际大模型量化负责人，主导<strong>浮点量化算法</strong>和<strong>低精度量化算法</strong>开发及主流开源模型量化推理落地。
+      3 年华为昇腾相关业务研发经验，就职于昇腾计算开发部<strong>推理使能</strong>组（大模型量化、投机推理、测评），本人现任Atlas 950代际大模型量化负责人，主导<strong>浮点量化算法</strong>和<strong>低精度量化算法</strong>开发及主流开源模型量化推理落地。
     </div>
 
     <h2 class="section-heading">教育背景</h2>
@@ -126,11 +126,26 @@
 
     <h3><strong>大模型量化推理（项目负责人）</strong></h3>
     <ul>
-      <li><strong>MXFP 量化落地：</strong>主导 <strong>MXFP8、MXFP4</strong> 算法设计与实现，支撑 Qwen、DeepSeek、GLM、LongCat、Kimi、Minimax 等 20+ 权重在昇腾 A5 NPU 上线及客户送测；对 DeepSeek v4、Qwen3.5 实现 0-day 量化适配。精度相对浮点误差 &lt;1%，推理性能达竞品 1.x 倍，单模型适配约 1 天，整体调优周级完成。</li>
-      <li><strong>W4A4 低精度量化：</strong>主导 <strong>SVDQuant、二级量化、MSE Round、C7</strong> 等低精优化算法，在开源多模态模型（Wan2.2、Qwen-Image-Edit等）上完成 W4A4 量化；VBench/Gedit 精度误差均 &lt;0.01，推理性能达竞品 1.x 倍。</li>
-      <li><strong>动态 PTQ 转换：</strong>实现 <strong>Model-free 权重转换</strong>能力，在 PTQ 动态场景下以轻量化流程完成权重量化（涉及INT、FP、NVFP、MXFP等），降低大模型迁移与推理部署成本。</li>
-      <li><strong>端到端项目交付：</strong>作为负责人协同推理引擎、量化算法、量化工具 4 个部门 20+ 人推进交付，参与关键方案设计与路线决策，有项目管理经验。</li>
-      <li><strong>投机推理：</strong>主要负责DeepSeek-V4-Flash/Pro-<strong>DSpark</strong> 权重的mtp W4A8量化。并且基于 DeepSeek 开源项目 DeepSpec，参与完成 910B NPU芯片上的 DSpark 训练→GSM8K eval 全链路验证。</li>
+      <li><strong>易用性提升：</strong>
+        <ul>
+          <li>作为<strong>产品开源开放负责人</strong>，在开源易用性要求下设计<strong>领域驱动</strong>架构，区别于传统脚本量化，划分为接口—应用—领域—基础设施四层，降低用户使用与开发者贡献门槛。</li>
+          <li>面对开源大模型权重体量成倍增长，提出<strong>逐层量化</strong>方案，量化仅需单卡，时长由天级降至小时级；参与设计 <strong>DP 并行多卡量化</strong>分布式执行框架，完成进程管理与跨卡同步，在单卡逐层基础上将耗时进一步缩短约卡数×0.5倍。</li>
+          <li>主导设计并开发 <strong>Model-free</strong> 权重转换能力，在纯动态场景下不依赖模型结构与 NPU 设备，轻量化完成权重量化转换（涉及 INT、FP、NVFP、MXFP 等），大幅降低大模型迁移与推理部署成本。</li>
+        </ul>
+      </li>
+      <li><strong>低精浮点量化：</strong>
+        <ul>
+          <li>作为 <strong>Atlas 950 量化负责人</strong>，主导 Ascend <strong>MXFP8、MXFP4</strong> 算法设计与落地，支撑 Qwen、DeepSeek、GLM、LongCat、Kimi、Minimax 等 20+ 权重在昇腾 A5 NPU 上线；精度相对浮点误差 &lt;1%，推理性能达竞品 1.x 倍，单模型适配约 1 天，整体调优周级完成。</li>
+          <li>主导多种<strong>低比特量化算法</strong>在 Wan2.2、Qwen-Image-Edit 等多模态模型上完成 MXFP8、MXFP4 优化（如 MSE Round、二级量化、SVDQuant、CeilX 等）；在 VBench / GEdit 数据集上精度误差均 &lt; 0.01，推理性能达竞品 1.x 倍。</li>
+        </ul>
+      </li>
+      <li><strong>投机推理：</strong>
+        <ul>
+          <li>主要负责 DeepSeek-V4-Flash/Pro-<strong>DSpark</strong> 权重的 MTP W4A8 量化，涉及 QuaRot 旋转量化算法，完成 Norm-Linear 等子图融合。</li>
+          <li>基于 DeepSeek 开源项目 DeepSpec，参与完成 910B NPU 芯片上的 DSpark 训练→GSM8K eval 全链路验证。</li>
+        </ul>
+      </li>
+      <li><strong>项目管理：</strong>作为负责人协同推理引擎、量化算法、量化工具 4 个部门 20+ 人推进交付，参与关键方案设计与路线决策，有一定项目管理经验。</li>
     </ul>
     <h3><strong>昇腾算子调试工具</strong><strong>（主要开发者）</strong></h3>
     <ul>

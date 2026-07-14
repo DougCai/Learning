@@ -104,7 +104,71 @@ def job_text_to_html(text: str) -> str:
     return escape_html(text)
 
 
-Block = tuple[str, str]
+Block = tuple[str, str]  # kind, content; kind may be "li" or "li2" (nested)
+
+
+def _find_matching_close(text: str, open_tag: str, close_tag: str, start: int) -> int:
+    """Return end index (after close_tag) for a balanced open/close pair starting at start."""
+    depth = 0
+    i = start
+    open_re = re.compile(rf"<{open_tag}\b[^>]*>", re.I)
+    close_re = re.compile(rf"</{close_tag}>", re.I)
+    while i < len(text):
+        om = open_re.search(text, i)
+        cm = close_re.search(text, i)
+        if cm is None:
+            raise ValueError(f"Unclosed <{open_tag}> starting at {start}")
+        if om is not None and om.start() < cm.start():
+            depth += 1
+            i = om.end()
+            continue
+        depth -= 1
+        i = cm.end()
+        if depth == 0:
+            return i
+    raise ValueError(f"Unclosed <{open_tag}> starting at {start}")
+
+
+def _split_li_items(ul_inner: str) -> list[str]:
+    """Split a <ul> inner HTML into top-level <li> inners (supports nested lists)."""
+    items: list[str] = []
+    pos = 0
+    li_open = re.compile(r"<li\b[^>]*>", re.I)
+    while True:
+        m = li_open.search(ul_inner, pos)
+        if not m:
+            break
+        end = _find_matching_close(ul_inner, "li", "li", m.start())
+        # content between <li...> and matching </li>
+        close_start = ul_inner.rfind("</", m.end(), end)
+        items.append(ul_inner[m.end():close_start].strip())
+        pos = end
+    return items
+
+
+def _extract_list_blocks(ul_html: str, depth: int = 1) -> list[Block]:
+    """Convert a <ul>...</ul> fragment into li/li2 blocks."""
+    open_m = re.match(r"<ul\b[^>]*>", ul_html, re.I | re.S)
+    if not open_m:
+        raise ValueError("Expected <ul> fragment")
+    end = _find_matching_close(ul_html, "ul", "ul", 0)
+    inner = ul_html[open_m.end(): ul_html.rfind("</", open_m.end(), end)].strip()
+    blocks: list[Block] = []
+    kind = "li" if depth <= 1 else "li2"
+    for item in _split_li_items(inner):
+        nested = re.search(r"<ul\b", item, re.I)
+        if nested:
+            head = item[: nested.start()].strip()
+            if head:
+                blocks.append((kind, html.unescape(head)))
+            nested_end = _find_matching_close(item, "ul", "ul", nested.start())
+            blocks.extend(_extract_list_blocks(item[nested.start():nested_end], depth + 1))
+            tail = item[nested_end:].strip()
+            if tail:
+                blocks.append((kind, html.unescape(tail)))
+        else:
+            blocks.append((kind, html.unescape(item)))
+    return blocks
 
 
 # ---------------------------------------------------------------------------
@@ -126,7 +190,7 @@ def extract_html_blocks(html_text: str) -> list[Block]:
         (r'<div class="edu-item">(.*?)</div>', "edu"),
         (r'<div class="job-line">\s*(.*?)\s*</div>', "job"),
         (r"<h3>(.*?)</h3>", "h3"),
-        (r"<li>(.*?)</li>", "li"),
+        (r"<ul\b[^>]*>", "ul_start"),
         (r'<p class="minor">(.*?)</p>', "minor"),
         (r'<div class="skill-line">(.*?)</div>', "skill"),
     ]
@@ -138,12 +202,22 @@ def extract_html_blocks(html_text: str) -> list[Block]:
         for pattern, kind in patterns:
             match = re.search(pattern, body[pos:], re.S)
             if match and (best is None or match.start() < best[0]):
-                best = (match.start(), match.end(), kind, match.group(1))
+                best = (match.start(), match.end(), kind, match)
         if not best:
             break
-        start, end, kind, inner = best
+        start, end, kind, match = best
         pos += start
-        inner = html.unescape(inner.strip())
+        if kind == "ul_start":
+            # Skip nested <ul> that already belong to a parent list: only top-level
+            # lists under .page / after h3. If we landed inside already-consumed
+            # content this shouldn't happen because we advance past whole <ul>.
+            ul_end_rel = _find_matching_close(body[pos:], "ul", "ul", 0)
+            ul_html = body[pos: pos + ul_end_rel]
+            blocks.extend(_extract_list_blocks(ul_html, depth=1))
+            pos += ul_end_rel
+            continue
+
+        inner = html.unescape(match.group(1).strip())
         if "header-photo" in inner or "<img" in inner:
             pos += end - start
             continue
@@ -162,11 +236,13 @@ def extract_docx_items(doc: Document) -> list[dict]:
         text = paragraph.text.strip()
         if not text:
             continue
+        indent = paragraph.paragraph_format.left_indent
         items.append(
             {
                 "style": paragraph.style.name if paragraph.style else "Normal",
                 "text": text,
                 "html": para_to_html_runs(paragraph),
+                "indent": int(indent) if indent is not None else 0,
             }
         )
     return items
@@ -197,6 +273,9 @@ def extract_docx_blocks(doc: Document) -> list[Block]:
     blocks.append(("job", job_text_to_html(items[idx]["text"])))
     idx += 1
 
+    # Nested bullets from html2docx use ~Cm(1.0) ≈ 360000 EMUs; top-level ~228600.
+    nested_indent_threshold = 300000
+
     while idx < len(items):
         item = items[idx]
         text = item["text"]
@@ -207,7 +286,8 @@ def extract_docx_blocks(doc: Document) -> list[Block]:
             idx += 1
             continue
         if style == "List Bullet":
-            blocks.append(("li", item["html"]))
+            kind = "li2" if item["indent"] >= nested_indent_threshold else "li"
+            blocks.append((kind, item["html"]))
             idx += 1
             continue
         if text.startswith("早期曾参与"):
@@ -268,9 +348,11 @@ def build_docx(blocks: list[Block]) -> Document:
             paragraph = doc.add_paragraph()
             add_runs_to_paragraph(paragraph, inner, 10.5, NAVY)
             paragraph.paragraph_format.space_before = Pt(6)
-        elif kind == "li":
+        elif kind in {"li", "li2"}:
             paragraph = doc.add_paragraph(style="List Bullet")
             paragraph.paragraph_format.space_after = Pt(3)
+            if kind == "li2":
+                paragraph.paragraph_format.left_indent = Cm(1.0)
             add_runs_to_paragraph(paragraph, inner, 10.5)
         elif kind == "minor":
             paragraph = doc.add_paragraph()
@@ -335,11 +417,33 @@ def render_html_body(blocks: list[Block]) -> str:
             lines.append(f'    <div class="job-line">\n      {content}\n    </div>\n')
         elif kind == "h3":
             lines.append(f"    <h3>{content}</h3>")
-        elif kind == "li":
+        elif kind in {"li", "li2"}:
             ul_lines = ["    <ul>"]
-            while idx < len(blocks) and blocks[idx][0] == "li":
-                ul_lines.append(f"      <li>{blocks[idx][1]}</li>")
-                idx += 1
+            while idx < len(blocks) and blocks[idx][0] in {"li", "li2"}:
+                item_kind, item_content = blocks[idx]
+                if item_kind == "li2":
+                    # Orphan nested item — flatten to top-level bullet.
+                    ul_lines.append(f"      <li>{item_content}</li>")
+                    idx += 1
+                    continue
+
+                # Consume following nested bullets into this top-level <li>.
+                nested: list[str] = []
+                j = idx + 1
+                while j < len(blocks) and blocks[j][0] == "li2":
+                    nested.append(blocks[j][1])
+                    j += 1
+
+                if nested:
+                    nested_html = "\n".join(
+                        ["        <ul>"]
+                        + [f"          <li>{n}</li>" for n in nested]
+                        + ["        </ul>"]
+                    )
+                    ul_lines.append(f"      <li>{item_content}\n{nested_html}\n      </li>")
+                else:
+                    ul_lines.append(f"      <li>{item_content}</li>")
+                idx = j
             ul_lines.append("    </ul>")
             lines.append("\n".join(ul_lines))
             continue
