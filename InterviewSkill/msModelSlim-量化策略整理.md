@@ -53,3 +53,27 @@ hadamard矩阵是怎么计算的？
 只能2次幂的
 然后用随机对角矩阵乘hadmard矩阵，最后除根号size
 非2次幂的，拆分成预先生成的非二次幂hadamard和二次幂的相乘（butterfly计算，比walsh推导性能更好）
+
+
+AWQ：
+先计算每个通道的平均值=每个通道的scale
+枚举ratio，0.05一个步长，和scale逐元素相乘，计算mse
+
+SSZ：
+1.原始scale、offset，计算得到q
+2.固定q，最小二乘计算scale、offset
+3.得到新q，执行2
+4.不断循环，直到收敛
+
+GPTQ：
+残差，计算误差后，补偿到未量化元素中，很耗时
+
+
+
+DeepSeek V4：
+wq_a：把q压缩到latent，4096->1024
+wq_b：latent的q打成多头，相当于扩了，1024->64*512
+wkv：B,S,4096直接变成B,S,512，都没有多头，所有q对应一组kv
+Compressor：根据compress_ratio，将连续多个kv加权求和成1个，变成B,S/compress_ratio,512
+windows：上面的基础上加上windows的长度也就是B,win+S/compress_ratio,512
+indexer：会在S/compress_ratio里选topk个，默认512个，所以最后kv结果是B,win+topk,512
