@@ -77,3 +77,10 @@ wkv：B,S,4096直接变成B,S,512，都没有多头，所有q对应一组kv
 Compressor：根据compress_ratio，将连续多个kv加权求和成1个，变成B,S/compress_ratio,512
 windows：上面的基础上加上windows的长度也就是B,win+S/compress_ratio,512
 indexer：会在S/compress_ratio里选topk个，默认512个，所以最后kv结果是B,win+topk,512
+
+
+msAgent：
+先做一次敏感层分析，上界：敏感层全回退，下界：不回退
+二分搜索最小达标的点，然后继续摸高，减少回退or换抑制策略
+
+敏感层分析：
