@@ -1,8 +1,6 @@
 介绍：
 我是来自昇腾计算产品线的蔡圣诚，目前在推理使能组工作，组内业务主要包括模型量化、投机推理和测评三个方向。本人现在主要担任下一代际芯片950的模型量化负责人，近期完成的工作主要是浮点低精度量化。去年因为昇腾全面开源开放，作为负责人也对模型量化从产品力、易用性的角度做了不同的优化。简单介绍一下两个项目点，一个是从人、主观的角度，让用户更易用，降低开发者门槛，二是从物料环境的客观角度，让产品的使用限制放开，从多卡到单卡再到并行量化，最后cpu量化。在低精浮点量化方面，主要是完成了mxfp量化的落地，在二十多个开源模型上线，并且对于低精度的量化完成了多种算法优化，最终达成客户目标。早期还参与过算子开发工具的研发，主要是涉及到算子的调试调优，目的是为了提升算子开发效率。
 
-
-
 从人+主观分析： 使用和开发
 
 领域驱动：
@@ -77,17 +75,16 @@ wkv：B,S,4096直接变成B,S,512，都没有多头，所有q对应一组kv
 Compressor：根据compress_ratio，将连续多个kv加权求和成1个，变成B,S/compress_ratio,512
 windows：上面的基础上加上windows的长度也就是B,win+S/compress_ratio,512
 indexer：会在S/compress_ratio里选topk个，默认512个，所以最后kv结果是B,win+topk,512
+wo_a、wo_b：先降维再升维，比o proj省参数
 
 msAgent：
 先做一次敏感层分析，上界：敏感层全回退，下界：不回退
 二分搜索最小达标的点，然后继续摸高，减少回退or换抑制策略
 
-<<<<<<< HEAD
-
 量化收益在推理时怎么拿到？
+首先比较直观的是数据的显存占用减少了
 
-1.计算量的层面分析（prefill）、访存带宽层面分析（decode）、并行层面分析（ep并行）
-
+计算量的层面分析（prefill）、访存带宽层面分析（decode）、并行层面分析（ep并行）
 1.是否能低精度load权重，不然显存都没法省
 2.硬件是否支持原生低精度计算，不然要反量化成bf16，此处有开销，且bf16还会反存回显存，显存收益也没有了，如果做了融合，可能还会有点显存收益或者带宽收益（decode阶段）
 3.是否有反量化矩阵乘融合算子，减少反量化的写回开销
@@ -98,7 +95,9 @@ msAgent：
 8.是否attention成为瓶颈，可以做fa3，或者kv cache量化
 
 TP：
-开始（gate/up、qkv）列切，后面（down、o）行切，做all-reduce
+开始（gate/up、qkv）列切，后面（down、o）行切，做all-reduce（因为是累加）
+首先可以做gate_up的pack，这样直接拼成一个大向量，更有利于tp并行
+比如gate+up的weight左右拼接，假如tp=4，每个rank上保存0.25个gate+up，每个rank上都有全量的x，x和gate+up计算，然后在rank内部做silu和乘法，每个rank上得到0.25份的结果，这个结果是按照列切分的，然后把down proj做行切，每个rank上加载0.25个weight，刚好可以和列切的做计算，最后做一个累加allreduce
 
 EP：
 每个卡放n个experts，router计算完之后all-to-all，分到不同的experts。专家计算完mlp，all-to-all做合并
@@ -108,6 +107,31 @@ kv cache量化：长上下文，decode阶段读取量太大，又不想影响到
 MHA、GQA，有dynamic cache接口
 fa3量化：对计算效率要求高，优化attention计算效率
 mla、多模态生成场景（没有kv cache)
-=======
-敏感层分析：
->>>>>>> dd5be056c35d5737bb17272f4785988bc60a6578
+
+DSpark量化：
+DSpark原理：并行输出多个token，然后markov head会做轻量的顺序依赖，confidence sceduling会预测置信度，低的就砍掉
+
+首先确认背景，V4主模型是做了旋转的，且dspark mtp中的embed和head是共用主模型的权重
+DSpark需要接收两个输入，一个是用来prefill构造kv cache的main hidden，一个是普通的经过主模型head输出的output
+假设有两种方案，一个是mtp就不旋转
+1.main hidden需要经过main proj和main norm，然后进入attn，计算wkv和kv norm。由于策略是不旋转，我需要把带旋转的main_hidden反旋回来，那就需要main proj做一个右旋来抵消
+2.但是output（不带旋转的）正常经过embed之后，由于embed是共享主模型的，所以是旋转过的，这时候就有矛盾了，所以策略是复制主模型没旋转前的embed和head，保证output这条decode分支也不带旋转
+还有一个是如果mtp精度不行，需要QuaRot
+1.难点在于如何处理wkv，因为在prefill阶段，wkv接收的是不带旋转的，但是在decode阶段接收的x是带旋转的，所以这里只能复制一份wkv。其他保持一致
+
+vllm-ascend基本推理服务步骤：
+1.服务初始化
+2.模型加载、切分、预热（分配显存）
+3.接收请求、调度
+4.prefill，保存kv cache，生成首token。会分配kv block，按照pagedattention
+prefill阶段优化手段：chunked preill（长序列切小，一般和Continuous Batching一起使用，组合不同的prefill和decode成为一个batch进行推理）
+Prefix Caching（前缀和匹配，复用kv cache）
+5.decode，Continuous Batching动态处理多个请求
+6.sample采样输出
+pd分离：避免prefill处理长序列占用大量资源影响decode，就是需要传输kv cache
+
+量化权重精度排查：
+1.环境、配置排查
+2.首token不对，prefill，逐层输出中间激活，计算余弦相似度，找到误差突然放大的层，然后再具体看里面每个阶段的输出，检查该层权重参数、算子等
+3.decode乱码，排查decode是否有不一样的算子，kv cache是否有问题
+4.量化异常也不一定是权重异常，可能是量化触发了框架或者算子某些不同的执行路径
