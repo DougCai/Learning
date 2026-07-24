@@ -133,10 +133,25 @@ prefill阶段优化手段：chunked preill（长序列切小，一般和Continuo
 Prefix Caching（前缀和匹配，复用kv cache）
 5.decode，Continuous Batching动态处理多个请求
 6.sample采样输出
-pd分离：避免prefill处理长序列占用大量资源影响decode，就是需要传输kv cache
+
+pd分离：
+避免prefill处理长序列占用大量资源影响decode，或者短prompt输入，但是长回答的问题，decode阶段耗时大
+硬件层面可以prefill选择算力更强的，比如950PR，decode选择带宽更大的，比如950DT，带宽差2倍多
+就是需要怎么解决kv cache的管理和传输
+
+mooncake：
+如果没有mooncake，传输kv cache用NIXL或者HIXL，专门为pd分离场景下kv cache的单向传输做的
+前缀和复用、多级缓存分层（前缀缓存可以放在主机内存或者ssd中）
+
 
 量化权重精度排查：
 1.环境、配置排查
 2.首token不对，prefill，逐层输出中间激活，计算余弦相似度，找到误差突然放大的层，然后再具体看里面每个阶段的输出，检查该层权重参数、算子等
 3.decode乱码，排查decode是否有不一样的算子，kv cache是否有问题
 4.量化异常也不一定是权重异常，可能是量化触发了框架或者算子某些不同的执行路径
+
+NVFP、MXFP
+NVFP8：per tensor或者per channel，scale是fp32
+NVFP4：双层缩放，全局fp32 scale， block=16，且scale是e4m3
+ocp的mxfp：floor - emax 8
+nv的mxfp：ceil  / max
