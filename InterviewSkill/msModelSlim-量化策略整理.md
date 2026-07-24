@@ -108,6 +108,11 @@ MHA、GQA，有dynamic cache接口
 fa3量化：对计算效率要求高，优化attention计算效率
 mla、多模态生成场景（没有kv cache)
 
+MTP原理：
+输入是 主模型的最后一个hidden + 主模型输出的token id，然后预测出一个token，并把hidden和token id传给下一个mtp
+和eagle的区别在于，eagle是单独训练的，mtp是和主模型一起训练的。eagle是单层网络循环外推hidden，且head是直接用主模型的。mtp有多层结构，也有自己的head
+mtp和eagle都是串行的，dflash和dspark都是并行多token一起输出的。然后dflash有双向注意力
+
 DSpark量化：
 DSpark原理：并行输出多个token，然后markov head会做轻量的顺序依赖，confidence sceduling会预测置信度，低的就砍掉
 
