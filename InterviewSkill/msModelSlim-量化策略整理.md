@@ -56,7 +56,7 @@ hadamard矩阵是怎么计算的？
 非2次幂的，拆分成预先生成的非二次幂hadamard和二次幂的相乘（butterfly计算，比walsh推导性能更好）
 
 AWQ：
-先计算每个通道的平均值=每个通道的scale
+先计算每个通道的平均值=每个通道的scale，scale会有一个power操作，ratio是针对power的参数
 枚举ratio，0.05一个步长，和scale逐元素相乘，计算mse
 
 SSZ：
@@ -66,6 +66,7 @@ SSZ：
 4.不断循环，直到收敛
 
 GPTQ：
+是per channel，一个列做完量化了，补偿到其他列
 残差，计算误差后，补偿到未量化元素中，很耗时
 
 DeepSeek V4：
@@ -99,6 +100,9 @@ TP：
 首先可以做gate_up的pack，这样直接拼成一个大向量，更有利于tp并行
 比如gate+up的weight左右拼接，假如tp=4，每个rank上保存0.25个gate+up，每个rank上都有全量的x，x和gate+up计算，然后在rank内部做silu和乘法，每个rank上得到0.25份的结果，这个结果是按照列切分的，然后把down proj做行切，每个rank上加载0.25个weight，刚好可以和列切的做计算，最后做一个累加allreduce
 
+如果是列切weight，每一列就是一个channel，scale因为和channel的维度一样，那也直接按照比例切scale就行
+行切weight的话无所谓，不用切scale，就用全量的就行
+
 EP：
 每个卡放n个experts，router计算完之后all-to-all，分到不同的experts。专家计算完mlp，all-to-all做合并
 
@@ -107,6 +111,9 @@ kv cache量化：长上下文，decode阶段读取量太大，又不想影响到
 MHA、GQA，有dynamic cache接口
 fa3量化：对计算效率要求高，优化attention计算效率
 mla、多模态生成场景（没有kv cache)
+
+TurboQuant:
+1.旋转   2.分段映射（INT3)  3.QJL校准偏差
 
 MTP原理：
 输入是 主模型的最后一个hidden + 主模型输出的token id，然后预测出一个token，并把hidden和token id传给下一个mtp
