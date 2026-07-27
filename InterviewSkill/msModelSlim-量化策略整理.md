@@ -162,3 +162,19 @@ NVFP8：per tensor或者per channel，scale是fp32
 NVFP4：双层缩放，全局fp32 scale， block=16，且scale是e4m3
 ocp的mxfp：floor - emax 8
 nv的mxfp：ceil  / max
+
+wan2.2量化的难点：
+激活分布动态变化大【动态量化】，异常值敏感【算法选择ceilX、mse round】、attention敏感【在线旋转】，前层极度敏感【回退混合量化】，显存压力大【逐层量化】
+1.采用激活的动态量化，因为高噪低噪结构、还分t2v、i2v、ti2v，多模态数据输入差异大，构造校准集采用静态scale的难度大且效果不好。
+方案：线性层激活使用per block的动态量化，32个元素计算scale，采用w4a4混w8a8，attention部分采用fp8 per token混mxfp4 per block
+2.对异常值极度敏感
+方案：量化scale的计算粒度减小，32个元素。算法的选择，4bit采用ceilX，8bit采用mse round
+3.attention部分敏感
+方案：采用在线旋转+混合量化，离线保存hadamard矩阵，在线对Q、K做QuaRot，然后再做FA3量化
+4.不同层量化敏感度差异大
+方案：敏感层分析，前五个dit block回退到mxfp8，第0层的self attention用fp8
+5.双专家，默认是81帧1080p，40个扩散步，对npu的显存要求高
+方案：逐层量化
+6.vbench测评耗时大
+方案：k-means采样小数据集
+补充：为什么不量化cross-attention？因为占比没有self-attention那么大，且语义敏感
