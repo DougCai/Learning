@@ -81,6 +81,7 @@ wo_a、wo_b：先降维再升维，比o proj省参数
 msAgent：
 先做一次敏感层分析，上界：敏感层全回退，下界：不回退
 二分搜索最小达标的点，然后继续摸高，减少回退or换抑制策略
+subagent：配置prompt、skills、检查清单
 
 敏感层分析：
 layer层级的：
@@ -197,3 +198,41 @@ scaling law原始：和参数量、训练数据、量化位宽三个有关，论
 最终量化策略：90%全精度预训练+10%QAT微调
 保存的是bf16+scale，所以还需要离线做一波转换+pack
 固定了量化策略，就搜索量化函数：主要是确定映射的量化网格分布，比如2bit能表示4位【-0.75α，-0.25α，0.25α，0.75α】，α是QAT阶段学习出来的参数
+
+测评正常，但是实际推理有乱码、重复等问题：
+首先测评正常的话，基本能排除是模型本身的问题，聚焦在推理引擎上
+为什么benchmark测不出来？
+1.串行场景  2.缺少实际生产环境的长短请求混合调度  3.有些选择题容错高，可能有小问题但是还是能选对
+一些可能的推理引擎侧的原因：
+1.高并发场景下chunk混乱，导致后一个prefill的chunk读到前一个的context
+2.kv cache管理混乱，读错kv block
+3.sample参数不一致
+
+
+对称int8量化代码：
+abs_max = max(abs(x_min), abs(x_max))
+scale = abs_max / 127
+quantized = clip(round(x / scale), -127, 127)
+dequantized = quantized * scale
+
+非对称int8量化代码：
+scale = (x_max - x_min) / (127 - (-128))
+zero_point = round(-128 - x_min / scale)
+quantized = clip(round(x / scale + zero_point), -128, 127)
+dequantized = scale * (quantized - zero_point)
+
+mxfp8量化代码：
+block_max = max(abs(block))
+nv：shared_exp = ceil(log2(block_max / 448))
+ocp：shared_exp = floor(log2(block_max)) - 8
+缩放：
+y = x / 2 ^ shared_exp
+计算私有指数：
+private_exp = floor(log2(y))
+计算尾数：
+尾数部分 = y / 2 ^ private_exp
+舍入映射：
+e4m3_value = M3(尾数部分) * 2 ^ private_exp
+
+dequant：
+dequant = e4m3_value × 2 ^ shared_exp
