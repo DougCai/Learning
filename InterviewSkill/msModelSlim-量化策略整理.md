@@ -77,6 +77,7 @@ Compressor：根据compress_ratio，将连续多个kv加权求和成1个，变�
 windows：上面的基础上加上windows的长度也就是B,win+S/compress_ratio,512
 indexer：会在S/compress_ratio里选topk个，默认512个，所以最后kv结果是B,win+topk,512
 wo_a、wo_b：先降维再升维，比o proj省参数
+模型适配器：mhc适配到旋转路径中、根据压缩ratio设置不同的smooth融合策略、低秩wq_a、wq_b单独处理一条旋转路径
 
 msAgent：
 先做一次敏感层分析，上界：敏感层全回退，下界：不回退
@@ -167,8 +168,8 @@ mooncake：
 
 NVFP、MXFP
 NVFP8：per tensor或者per channel，scale是fp32
-NVFP4：双层缩放，全局fp32 scale， block=16，且scale是e4m3
-ocp的mxfp：floor - emax 8
+NVFP4：双层缩放，全局per-tensor fp32 scale（max / 6 / 448）， block=16，且scale是e4m3
+ocp的mxfp：floor - emax 8 or 2
 nv的mxfp：ceil  / max
 
 wan2.2量化的难点：
@@ -193,7 +194,7 @@ EP并行、EPLB专家负载均衡（分动静态，调整专家布局或者复�
 
 ParetoQ：
 准确率和量化是一个tradoff，得确认什么位宽最合适，需要统一的低比特量化框架，比较1bit、1.58bit、2bit、3bit、4bit
-1.58bit：有3个状态需要表示，负数、0、正数，所以是log2 3，所以约等于1.58bit的信息量。硬件上还是
+1.58bit：有3个状态需要表示，负数、0、正数，所以是log2 3，所以约等于1.58bit的信息量。硬件上还是不支持
 scaling law原始：和参数量、训练数据、量化位宽三个有关，论文提出还与量化策略、量化函数有关
 最终量化策略：90%全精度预训练+10%QAT微调
 保存的是bf16+scale，所以还需要离线做一波转换+pack
@@ -217,7 +218,7 @@ dequantized = quantized * scale
 
 非对称int8量化代码：
 scale = (x_max - x_min) / (127 - (-128))
-zero_point = round(-128 - x_min / scale)
+zero_point = round(-x_min / scale)
 quantized = clip(round(x / scale + zero_point), -128, 127)
 dequantized = scale * (quantized - zero_point)
 
@@ -236,3 +237,9 @@ e4m3_value = M3(尾数部分) * 2 ^ private_exp
 
 dequant：
 dequant = e4m3_value × 2 ^ shared_exp
+
+
+校准集如何制定：
+1.首先直接用开源数据集作为校准集，比如gsm8k、ceval这些。可以混合mix作为一个数据集
+2.特定场景：代码编程题，长序列数据集，中英文双语
+3.支持自定义数据集
