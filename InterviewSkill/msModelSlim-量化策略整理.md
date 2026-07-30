@@ -140,6 +140,11 @@ DSpark需要接收两个输入，一个是用来prefill构造kv cache的main hid
 还有一个是如果mtp精度不行，需要QuaRot
 1.难点在于如何处理wkv，因为在prefill阶段，wkv接收的是不带旋转的，但是在decode阶段接收的x是带旋转的，所以这里只能复制一份wkv。其他保持一致
 
+草稿模型训练：
+本质是知识蒸馏，草稿模型拟合主模型的输出分布
+分在线和离线，离线是预先采样实际业务的prompt，给主模型，保存输出，磁盘空间要求很大
+在线训练，启动vllm服务，在线主模型推理，采集数据作为训练数据集
+
 vllm-ascend基本推理服务步骤：
 1.服务初始化
 2.模型加载、切分、预热（分配显存）
@@ -243,3 +248,14 @@ dequant = e4m3_value × 2 ^ shared_exp
 1.首先直接用开源数据集作为校准集，比如gsm8k、ceval这些。可以混合mix作为一个数据集
 2.特定场景：代码编程题，长序列数据集，中英文双语
 3.支持自定义数据集
+
+英伟达GPU：
+1.A系列【INT8、FP16】、H系列【FP8】、B系列【FP4】
+基本计算单元是 SM（Streaming Multiprocessor，流式多处理器），包含cuda core、tensor core、warp scheduler等
+simt执行模型
+
+msmodelslim与llm-compressor、model-opt的优势：
+1.亲和昇腾
+2.集成了更多的算法和模型
+3.有更多的功能：敏感层分析、自动调优、权重转换
+4.更像一个产品：有交互的cli，清晰的配置yaml，用户上手难度低且开发者贡献门槛低
