@@ -54,6 +54,10 @@ hadamard矩阵是怎么计算的？
 只能2次幂的
 然后用随机对角矩阵乘hadmard矩阵，最后除根号size
 非2次幂的，拆分成预先生成的非二次幂hadamard和二次幂的相乘（butterfly计算，比walsh推导性能更好）
+如果是非常大的维度：
+1.可以两个小矩阵相乘Kronecker 分解。比如down的行size是i_h（很大），分解成i_h = m * n，然后把这一行也reshape成一个m * n的矩阵，这样就可以用两个m*m和n*n的矩阵来做旋转
+2.Block Hadamard。原tensor分块，旋转矩阵对角化，分成块状处理
+3.FWHT。快速推导旋转矩阵计算
 
 AWQ：
 先计算每个通道的平均值=每个通道的scale，scale会有一个power操作，ratio是针对power的参数
