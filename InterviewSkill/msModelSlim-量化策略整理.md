@@ -57,7 +57,7 @@ hadamard矩阵是怎么计算的？
 如果是非常大的维度：
 1.可以两个小矩阵相乘Kronecker 分解。比如down的行size是i_h（很大），分解成i_h = m * n，然后把这一行也reshape成一个m * n的矩阵，这样就可以用两个m*m和n*n的矩阵来做旋转
 2.Block Hadamard。原tensor分块，旋转矩阵对角化，分成块状处理
-3.FWHT。快速推导旋转矩阵计算
+3.FWHT。快速推导旋转矩阵计算，主要靠不断执行(a, b) -> (a+b, a-b)
 
 AWQ：
 先计算每个通道的平均值=每个通道的scale，scale会有一个power操作，ratio是针对power的参数
@@ -267,3 +267,33 @@ msmodelslim与llm-compressor、model-opt的优势：
 动态shape场景：
 1.算子侧无法优化，比如不能循环展开、不能提前设置共享内存、不能graph
 2.可以使用bucket（提前设置好一组shape，比如2次幂，或者128的倍数），进行预先编译啊、组图啊。但会有padding浪费，可以多加一些bucket（基于业务场景），比如在256和512之间加个400什么的。或者可以用lazy padding的办法，也就是不物理上padding，后续计算mask处理。
+
+pdmix量化：
+1.prefill，动态量化，保精度，因为生成的kv会影响后续decode
+2.decode，静态量化，保性能
+
+推理系统性能优化：
+TTFT：首token输出时延   = Tw（请求到达） + Ts（调度） + Tp（prefill）
+TPOT：每个输出token的平均平均时延   = Td（decode总耗时）/ Lout
+TTLT：最后一个token的端到端输出时延
+ITL：相邻两次decode forward的时延
+TPS：单位时间输出token数
+QPS：单位时间完成请求数
+
+prefill阶段（profiling看chunk之间是否有调度空泡，看每个算子的耗时，能否融合、看bound、通信算子能否量化）
+1.cpu执行优化：fasttoken，cpu分词阶段提速10倍，无正则分词，批量编码，流式处理
+2.请求级调度优化：DPLB，每个batch的长短不一致
+3.token级调度优化：chunked prefill
+4.kv cache优化：prefix cache、池化（多级缓存mooncacke）、kv cache offload（长序列场景下将kv cache offload到host侧）
+5.并行优化：prefill cp并行，切seq，各自计算自己token。先Continuous Batching管理p和d的请求，然后pcp分配多个rank，每个rank内部可以chunked更小块
+6.专家负载均衡优化：EPLB，热点专家复制+重新分配专家
+7.量化、低比特通信
+
+decode阶段（profiling看cpu、npu的同步空泡，npu快慢卡、负载相关，最后看算子，是否能融合）
+1.decode阶段计算量小，有大量cpu操作，建议cpu绑核，更稳定
+2.预取：权重预取、kv cache预取，从hbm到l2 cache
+3.动态EPLB：动态调整ep策略
+4.量化
+5.投机推理
+
+pd配比：QPSp/QPDd，还得考虑p、d的不同并发bs
