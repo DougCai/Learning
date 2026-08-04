@@ -314,12 +314,10 @@ QPS：单位时间完成请求数
 
 prefill阶段（profiling看chunk之间是否有调度空泡，看每个算子的耗时，能否融合、看bound、通信算子能否量化）
 1.cpu执行优化：fasttoken，cpu分词阶段提速10倍，无正则分词，批量编码，流式处理
-2.请求级调度优化：DPLB，每个batch的长短不一致
-3.token级调度优化：chunked prefill
-4.kv cache优化：prefix cache、池化（多级缓存mooncacke）、kv cache offload（长序列场景下将kv cache offload到host侧）
-5.并行优化：prefill cp并行，切seq，各自计算自己token。先Continuous Batching管理p和d的请求，然后pcp分配多个rank，每个rank内部可以chunked更小块
-6.专家负载均衡优化：EPLB，热点专家复制+重新分配专家
-7.量化、低比特通信
+2.多卡并行+负载均衡：DP、TP、EP、CP，DPLB，每个batch的长短不一致，EPLB，热点专家复制+重新分配专家
+3.kv cache优化：prefix cache、池化（多级缓存mooncacke）、kv cache offload（长序列场景下将kv cache offload到host侧）
+4.并行优化：prefill cp并行，切seq，各自计算自己token。先Continuous Batching管理p和d的请求，然后pcp分配多个rank，每个rank内部可以chunked更小块
+5.量化、低比特通信
 
 decode阶段（profiling看cpu、npu的同步空泡，npu快慢卡、负载相关，最后看算子，是否能融合）
 1.decode阶段计算量小，有大量cpu操作，建议cpu绑核，更稳定
